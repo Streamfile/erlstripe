@@ -499,16 +499,16 @@ make_request(Endpoint, Method, Parameters) ->
 url_encode([]) -> [];
 url_encode([{Key, [T|_] = Struct}|Tl]) when is_tuple(T) ->
     %% Encode struct
-    [uri_encode(Key) ++ "=" ++ uri_encode_struct(Struct) | url_encode(Tl)];
+    [uri_encode_struct(Key, Struct)|url_encode(Tl)];
 url_encode([{Key, Val}|Tl]) ->
     [uri_encode(Key) ++ "=" ++ uri_encode(Val) | url_encode(Tl)].
 
-uri_encode_struct(Struct) ->
-    string:join(uri_encode_struct_aux(Struct), ",").
+uri_encode_struct(Key, Struct) ->
+    string:join(uri_encode_struct_aux(Key, Struct), "&").
 
-uri_encode_struct_aux([]) -> [];
-uri_encode_struct_aux([{Key, Val}|Tl]) ->
-    [uri_encode(Key) ++ ":" ++ uri_encode(Val)|uri_encode_struct_aux(Tl)].
+uri_encode_struct_aux(_, []) -> [];
+uri_encode_struct_aux(Key, [{SubKey, Val}|Tl]) ->
+    [uri_encode(Key) ++ "[" ++ uri_encode(SubKey) ++ "]=" ++ uri_encode(Val)|uri_encode_struct_aux(Key, Tl)].
 
 uri_encode(Val) when is_binary(Val) ->
     uri_encode(binary_to_list(Val));
