@@ -1,0 +1,14 @@
+{application, erlstripe,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  inets,
+                  ssl
+                 ]},
+  {mod, { erlstripe_app, []}},
+  {env, []}
+ ]}.
