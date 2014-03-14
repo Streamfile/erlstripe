@@ -1,7 +1,7 @@
 {application, erlstripe,
  [
-  {description, ""},
-  {vsn, "1"},
+  {description, "Library to communicate with Stripe API"},
+  {vsn, "0.1"},
   {registered, []},
   {applications, [
                   kernel,
@@ -10,5 +10,7 @@
                   ssl
                  ]},
   {mod, { erlstripe_app, []}},
-  {env, []}
+  {env, [
+         {stripe_key, "some_key"}
+        ]}
  ]}.
