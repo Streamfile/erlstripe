@@ -142,13 +142,14 @@
          list_all_events/1
         ]).
 
--define(HTTP_TIMEOUT, 10000).
+-define(HTTP_TIMEOUT, 100000).
 -define(BASE_URL, "https://api.stripe.com/v1").
 
 
 %%%================================
 %%% Charges
 %%%================================
+
 create_card_charge(Amount, Currency, Card) ->
     create_card_charge(Amount, Currency, Card, []).
 create_card_charge(Amount, Currency, Card, OptionalParams) when is_list(Currency),
@@ -188,12 +189,6 @@ capture_charge(ChargeId, Amount) ->
     Params = [{"amount", Amount} || Amount /= undefined],
     make_request("/charges/" ++ uri_encode(ChargeId) ++ "/capture", post, Params).
 
-
-%% Parameters is a proplist that can contain the following key/values:
-%% {count, Integer} - A limit on the number of objects to be returned. Count can range between 1 and 100 items.
-%% {created, Val} - A filter on the list based on the object created field. The value can be a string with an exact UTC timestamp, or it can be a dictionary
-%% {customer, CustomerId} - Only return charges for the customer specified by this customer ID
-%% {offset, Integer} - An offset into the list of returned items. The API will return the requested number of items starting at that offset.
 list_charges(Parameters) ->
     make_request("/charges", post, Parameters).
 
@@ -477,8 +472,6 @@ make_request(Endpoint, Method) ->
         }, [{timeout, ?HTTP_TIMEOUT}], [{full_result, false}])
      ).
 
-make_request(Endpoint, Method, []) ->
-    make_request(Endpoint, Method);
 make_request(Endpoint, get, Parameters) ->
     Params = url_encode(Parameters),
     UrlEncoded = string:join(Params, "&"),
@@ -496,12 +489,15 @@ make_request(Endpoint, Method, Parameters) ->
      ).
 
 
-url_encode([]) -> [];
-url_encode([{Key, [T|_] = Struct}|Tl]) when is_tuple(T) ->
+url_encode(List) ->
+    lists:flatten(url_encode_h(List)).
+
+url_encode_h([]) -> [];
+url_encode_h([{Key, [T|_] = Struct}|Tl]) when is_tuple(T) ->
     %% Encode struct
-    [uri_encode_struct(Key, Struct)|url_encode(Tl)];
-url_encode([{Key, Val}|Tl]) ->
-    [uri_encode(Key) ++ "=" ++ uri_encode(Val) | url_encode(Tl)].
+    [uri_encode_struct(Key, Struct)|url_encode_h(Tl)];
+url_encode_h([{Key, Val}|Tl]) ->
+    [uri_encode(Key) ++ "=" ++ uri_encode(Val) | url_encode_h(Tl)].
 
 uri_encode_struct(Key, Struct) ->
     string:join(uri_encode_struct_aux(Key, Struct), "&").
@@ -514,5 +510,7 @@ uri_encode(Val) when is_binary(Val) ->
     uri_encode(binary_to_list(Val));
 uri_encode(Val) when is_integer(Val) ->
     uri_encode(integer_to_list(Val));
+uri_encode(Val) when is_atom(Val) ->
+    uri_encode(atom_to_list(Val));
 uri_encode(Val) when is_list(Val) ->
     http_uri:encode(Val).
