@@ -474,8 +474,7 @@ make_request(Endpoint, Method) ->
 
 make_request(Endpoint, get, Parameters) ->
     Params = url_encode(Parameters),
-    UrlEncoded = string:join(Params, "&"),
-    make_request(Endpoint ++ "?" ++ UrlEncoded, get);
+    make_request(Endpoint ++ "?" ++ Params, get);
 make_request(Endpoint, Method, Parameters) ->
     handle_response(
       httpc:request(
@@ -490,7 +489,7 @@ make_request(Endpoint, Method, Parameters) ->
 
 
 url_encode(List) ->
-    lists:flatten(url_encode_h(List)).
+    string:join(url_encode_h(List), "&").
 
 url_encode_h([]) -> [];
 url_encode_h([{Key, [T|_] = Struct}|Tl]) when is_tuple(T) ->
