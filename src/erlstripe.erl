@@ -46,9 +46,7 @@
          create_new_subscription/3,
          retrieve_subscriptions/2,
          update_subscription/3,
-         cancel_subscription/2,
          cancel_subscription/3,
-         list_subscription/1,
          list_subscriptions/2
         ]).
 
@@ -190,7 +188,7 @@ capture_charge(ChargeId, Amount) ->
     make_request("/charges/" ++ uri_encode(ChargeId) ++ "/capture", post, Params).
 
 list_charges(Parameters) ->
-    make_request("/charges", post, Parameters).
+    make_request("/charges", get, Parameters).
 
 
 %%%================================
@@ -233,7 +231,7 @@ list_cards(CustomerId) ->
 %%% Subscriptions
 %%%================================
 create_new_subscription(CustomerId, PlanId, Parameters) ->
-    Params = [{"plan_id", PlanId}|Parameters],
+    Params = [{"plan", PlanId}|Parameters],
     make_request("/customers/" ++ uri_encode(CustomerId) ++ "/subscriptions", post, Params).
 
 retrieve_subscriptions(CustomerId, SubscriptionId) ->
@@ -242,14 +240,9 @@ retrieve_subscriptions(CustomerId, SubscriptionId) ->
 update_subscription(CustomerId, SubscriptionId, Parameters) ->
     make_request("/customers/" ++ uri_encode(CustomerId) ++ "/subscriptions/" ++ uri_encode(SubscriptionId), post, Parameters).
 
-cancel_subscription(CustomerId, SubscriptionId) ->
-    cancel_subscription(CustomerId, SubscriptionId, false).
-cancel_subscription(CustomerId, SubscriptionId, AtPeriodEnd) ->
-    Params = [{"at_period_end", AtPeriodEnd} || AtPeriodEnd],
-    make_request("/customers/" ++ uri_encode(CustomerId) ++ "/subscriptions/" ++ uri_encode(SubscriptionId), delete, Params).
+cancel_subscription(CustomerId, SubscriptionId, Parameters) ->
+    make_request("/customers/" ++ uri_encode(CustomerId) ++ "/subscriptions/" ++ uri_encode(SubscriptionId), delete, Parameters).
 
-list_subscription(CustomerId) ->
-    list_subscriptions(CustomerId, []).
 list_subscriptions(CustomerId, Parameters) ->
     make_request("/customers/" ++ uri_encode(CustomerId) ++ "/subscriptions", get, Parameters).
 
@@ -459,7 +452,8 @@ handle_response({ok, {402, JSON}}) ->
     {error, {request_failed, jsx:decode(list_to_binary(JSON))}};
 handle_response({ok, {404, JSON}}) ->
     {error, {not_found, jsx:decode(list_to_binary(JSON))}};
-handle_response({ok, _}) ->
+handle_response(Error) ->
+    io:format("~p~n", [Error]),
     {error, stripe_error}.
 
 make_request(Endpoint, Method) ->
@@ -472,20 +466,20 @@ make_request(Endpoint, Method) ->
         }, [{timeout, ?HTTP_TIMEOUT}], [{full_result, false}])
      ).
 
-make_request(Endpoint, get, Parameters) ->
-    Params = url_encode(Parameters),
-    make_request(Endpoint ++ "?" ++ Params, get);
-make_request(Endpoint, Method, Parameters) ->
+make_request(Endpoint, post, Parameters) ->
     handle_response(
       httpc:request(
-        Method,
+        post,
         {
           ?BASE_URL ++ Endpoint,
           [authorization()],
           "application/x-www-form-urlencoded",
           url_encode(Parameters)
         }, [{timeout, ?HTTP_TIMEOUT}], [{full_result, false}])
-     ).
+     );
+make_request(Endpoint, Method, Parameters) ->
+    Params = url_encode(Parameters),
+    make_request(Endpoint ++ "?" ++ Params, Method).
 
 
 url_encode(List) ->
