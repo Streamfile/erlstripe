@@ -500,7 +500,12 @@ uri_encode_struct_aux(Key, [{SubKey, Val}|Tl]) ->
     [uri_encode(Key) ++ "[" ++ uri_encode(SubKey) ++ "]=" ++ uri_encode(Val)|uri_encode_struct_aux(Key, Tl)].
 
 uri_encode(Val) when is_binary(Val) ->
-    uri_encode(binary_to_list(Val));
+    case binary_to_list(Val) of
+        [Value] when is_integer(Value) ->
+            uri_encode(Value);
+        Value ->
+            uri_encode(Value)
+    end;
 uri_encode(Val) when is_integer(Val) ->
     uri_encode(integer_to_list(Val));
 uri_encode(Val) when is_atom(Val) ->
